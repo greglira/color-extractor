@@ -28,12 +28,15 @@ class Skin(Task):
         if t == 'general':
             self._lo = np.array([0, 0.19, 0.31], np.float64)
             self._up = np.array([0.1, 1., 1.], np.float64)
+        elif t == 'strict':
+            self._lo = np.array([0, 0.23, 0.31], np.float64)
+            self._up = np.array([0.1, 0.68, 1.], np.float64)
         elif t != 'none':
             raise NotImplementedError('Only general type is implemented')
 
     def get(self, img):
         t = self._settings['skin_type']
-        if t == 'general':
+        if t == 'general' or t == 'strict':
             img = rgb2hsv(img)
         elif t == 'none':
             return np.zeros(img.shape[:2], np.bool)

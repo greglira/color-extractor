@@ -33,6 +33,9 @@ class ImageToColor(Task):
         colors = [self._name.get(c) for c in centers]
         flattened = list({c for l in colors for c in l})
 
+        # This is to count the size of each label
+        distinct_labels, counts = np.unique(labels, return_counts=True)
+
         if self._settings['debug'] is None:
             return flattened
 
@@ -43,12 +46,13 @@ class ImageToColor(Task):
         clusters = np.zeros(resized.shape, np.float64)
         clusters[~mask] = colored_labels
 
-        return flattened, {
-            'resized': resized,
-            'back': back_mask,
-            'skin': skin_mask,
-            'clusters': clusters
-        }
+        # Sending cluster centers instead of
+        return clusters_centers, dict(zip(distinct_labels, counts)), {
+                    'resized': resized,
+                    'back': back_mask,
+                    'skin': skin_mask,
+                    'clusters': clusters
+                }
 
     @staticmethod
     def _default_settings():
