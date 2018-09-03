@@ -2,7 +2,9 @@ import numpy as np
 import skimage.morphology as skm
 from skimage.filters import gaussian
 from skimage.color import rgb2hsv
-from skimage.util import img_as_float
+from skimage import img_as_ubyte
+import skin_detector
+import matplotlib.pyplot as plt
 
 from .task import Task
 
@@ -23,27 +25,18 @@ class Skin(Task):
 
         super(Skin, self).__init__(settings)
         self._k = skm.disk(1, np.bool)
-
-        t = self._settings['skin_type']
-        if t == 'general':
-            self._lo = np.array([0, 0.19, 0.31], np.float64)
-            self._up = np.array([0.1, 1., 1.], np.float64)
-        elif t == 'strict':
-            self._lo = np.array([0, 0.23, 0.31], np.float64)
-            self._up = np.array([0.1, 0.68, 1.], np.float64)
-        elif t != 'none':
-            raise NotImplementedError('Only general type is implemented')
+        self._lo = self._settings['low_thr']
+        self._up = self._settings['high_thr']
 
     def get(self, img):
         t = self._settings['skin_type']
-        if t == 'general' or t == 'strict':
+        if t == 'general':
             img = rgb2hsv(img)
+            return self._range_mask(img)
         elif t == 'none':
             return np.zeros(img.shape[:2], np.bool)
         else:
             raise NotImplementedError('Only general type is implemented')
-
-        return self._range_mask(img)
 
     def _range_mask(self, img):
         mask = np.all((img >= self._lo) & (img <= self._up), axis=2)
@@ -56,4 +49,6 @@ class Skin(Task):
     def _default_settings():
         return {
             'skin_type': 'general',
+            'low_thr':  np.array([0, 0.23, 0.31], np.float64),
+            'high_thr':  np.array([0.1, 0.68, 1.], np.float64)
         }
