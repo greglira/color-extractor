@@ -2,9 +2,6 @@ import numpy as np
 import skimage.morphology as skm
 from skimage.filters import gaussian
 from skimage.color import rgb2hsv
-from skimage import img_as_ubyte
-import skin_detector
-import matplotlib.pyplot as plt
 
 from .task import Task
 
