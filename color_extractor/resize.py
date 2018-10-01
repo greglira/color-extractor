@@ -29,9 +29,11 @@ class Resize(Task):
 
         super(Resize, self).__init__(settings)
 
-    def get(self, img):
+    def get(self, img, crop_location=None, crop_ratio=None):
         """Returns `img` cropped and resized."""
-        return self._resize(self._crop(img))
+        crop_location = crop_location if crop_location else self._default_settings()['crop_location']
+        crop_ratio = crop_ratio if crop_ratio else self._default_settings()['crop']
+        return self._resize(self._crop(img, crop_location, crop_ratio))
 
     def _resize(self, img):
         src_h, src_w = img.shape[:2]
@@ -39,16 +41,22 @@ class Resize(Task):
         dst_w = int((dst_h / src_h) * src_w)
         return resize(img, (dst_h, dst_w))
 
-    def _crop(self, img):
+    @staticmethod
+    def _crop(img, crop_loc, crop_ratio):
         src_h, src_w = img.shape[:2]
-        c = self._settings['crop']
-        dst_h, dst_w = int(src_h * c), int(src_w * c)
-        rm_h, rm_w = (src_h - dst_h) // 2, (src_w - dst_w) // 2
-        return img[rm_h:rm_h + dst_h, rm_w:rm_w + dst_w].copy()
+        dst_h, dst_w = int(src_h * crop_ratio), int(src_w * crop_ratio)
+        if crop_loc == "top":
+            top_h = int(src_h * 0.05)
+            rm_w = (src_w - dst_w) // 2
+            return img[top_h:top_h + dst_h, rm_w:rm_w + dst_w].copy()
+        elif crop_loc == "center":
+            rm_h, rm_w = (src_h - dst_h) // 2, (src_w - dst_w) // 2
+            return img[rm_h:rm_h + dst_h, rm_w:rm_w + dst_w].copy()
 
     @staticmethod
     def _default_settings():
         return {
             'crop': 0.90,
+            'crop_location': 'center',
             'rows': 100,
         }

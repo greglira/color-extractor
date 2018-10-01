@@ -25,24 +25,22 @@ class ImageToColor(Task):
         self._name = Name(samples, labels, self._settings['name'])
 
     def reset_skin(self, strategy, low_thr=None, up_thr=None):
-        self._skin = Skin({
-            'skin_type': strategy,
-            'low_thr':  low_thr,
-            'high_thr':  up_thr
-        })
+        self._skin.change_strategy(strategy)
+        self._skin.change_thresholds(low_thr, up_thr)
 
-    def get(self, img):
-        resized = self._resize.get(img)
+    def get(self, img, image_settings={}):
+        crop_location = image_settings['crop_loc'] if 'crop_loc' in image_settings.keys() else None
+        crop_ratio = image_settings['crop_ratio'] if 'crop_ratio' in image_settings.keys() else None
+        resized = self._resize.get(img, crop_location=crop_location, crop_ratio=crop_ratio)
         back_mask = self._back.get(resized)
+
+        skin_strategy = "general" if image_settings['remove_skin'] else "none"
+        self._skin.change_strategy(skin_strategy)
         skin_mask = self._skin.get(resized)
-        back_size = np.size(back_mask) - np.count_nonzero(back_mask)
-        skin_size = np.count_nonzero(skin_mask)
-        if skin_size / back_size > self.skin_back_thres:
-            # Either a person is naked or clothing is skin-colored, no need to apply skin filter :)
-            mask = back_mask
-        else:
-            mask = back_mask | skin_mask
-        k, labels, clusters_centers = self._cluster.get(resized[~mask])
+        mask = self.handle_back_skin_proportions(back_mask, skin_mask)
+
+        filtered_img = resized[~mask]
+        k, labels, clusters_centers = self._cluster.get(filtered_img)
         centers = self._selector.get(k, labels, clusters_centers)
         colors = [self._name.get(c) for c in centers]
         flattened = list({c for l in colors for c in l})
@@ -55,7 +53,7 @@ class ImageToColor(Task):
 
         colored_labels = np.zeros((labels.shape[0], 3), np.float64)
         for i, c in enumerate(clusters_centers):
-            colored_labels[labels == i] = c
+            colored_labels[labels == i] = np.percentile(filtered_img[labels == i], 70, axis=0)
 
         clusters = np.zeros(resized.shape, np.float64)
         clusters[~mask] = colored_labels
@@ -68,6 +66,16 @@ class ImageToColor(Task):
                     'clusters': clusters
                 }
 
+    def handle_back_skin_proportions(self, back_mask, skin_mask):
+        back_size = np.size(back_mask) - np.count_nonzero(back_mask)
+        skin_size = np.count_nonzero(skin_mask)
+        if skin_size / back_size > self.skin_back_thres:
+            # Either a person is naked or clothing is skin-colored, no need to apply skin filter :)
+            mask = back_mask
+        else:
+            mask = back_mask | skin_mask
+        return mask
+
     @staticmethod
     def _default_settings():
         return {
@@ -77,4 +85,11 @@ class ImageToColor(Task):
             'cluster': {},
             'selector': {},
             'name': {},
+        }
+
+    @staticmethod
+    def _default_image_settings():
+        return {
+            'crop': True,
+            'remove_skin': True
         }

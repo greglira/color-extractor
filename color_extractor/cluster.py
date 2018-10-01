@@ -1,4 +1,6 @@
 from sklearn.cluster import KMeans
+from skimage.filters.rank import median
+from skimage.morphology import disk
 
 from .exceptions import KMeansException
 from .task import Task

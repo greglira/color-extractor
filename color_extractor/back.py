@@ -2,7 +2,8 @@ import numpy as np
 import skimage.filters as skf
 import skimage.color as skc
 import skimage.morphology as skm
-from skimage.measure import label
+from skimage.measure import label, find_contours
+import matplotlib.pyplot as plt
 
 from .task import Task
 
@@ -85,7 +86,7 @@ class Back(Task):
         back[:, 0] = back[:, -1] = True
 
         # Label adjacent pixels of the same color.
-        labels = label(back, background=-1, connectivity=1)
+        labels = label(back, background=-1, connectivity=2)
 
         # Count as background all pixels labeled like one of the corners.
         corners = [(1, 1), (-2, 1), (1, -2), (-2, -2)]

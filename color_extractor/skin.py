@@ -25,6 +25,13 @@ class Skin(Task):
         self._lo = self._settings['low_thr']
         self._up = self._settings['high_thr']
 
+    def change_strategy(self, new_strategy):
+        self._settings['skin_type'] = new_strategy
+
+    def change_thresholds(self, new_lo, new_up):
+        self._lo = new_lo
+        self._up = new_up
+
     def get(self, img):
         t = self._settings['skin_type']
         if t == 'general':
